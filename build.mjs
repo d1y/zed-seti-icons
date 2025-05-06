@@ -1,5 +1,6 @@
 import * as fs from 'fs'
 import { execSync } from 'child_process'
+import req from 'request-promise'
 
 async function getUIVariables() {
   const text = fs.readFileSync("build/seti-ui/styles/ui-variables.less", 'utf-8')
@@ -61,30 +62,60 @@ const ignoreReplace = [
   'twig',
   'elm',
 ]
-tables.forEach(table=> {
-  const { file, icon, color } = table
-  const oldSVGPath = `build/seti-ui/icons/${icon}.svg`
-  let svgText = fs.readFileSync(oldSVGPath, 'utf-8')
-  
-  if (!ignoreReplace.includes(icon)) {
-    svgText = svgText.replace(/color="[^"]*"/g, 'color="currentColor"')
-    svgText = svgText.replace(/fill="[^"]*"/g, 'color="currentColor"')
-    svgText = svgText.replace(/\.st0{fill:(\S*);?}/, `.st0{fill:${color}}`)
-    svgText = svgText.replace(/\.st1{fill:(\S*);?}/, `.st1{fill:${color}}`)//stupid
+
+// https://github.com/cncf/svg-autocrop
+// https://autocrop.cncf.io
+async function svgCrop(svg) {
+  const baseUrl = 'https://autocrop.cncf.io/autocrop';
+  const response = await req({
+    method: 'POST',
+    body: { svg },
+    uri: baseUrl,
+    json: true
+  })
+  const { success, result, error } = response
+  if (!success) {
+    console.log("autocrop failed: ", error)
+    return ''
   }
-  
-  if (icon == 'wgt') {
-    svgText = svgText.replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" `)
+  return result
+}
+
+const iconProcessed = new Set
+for (const table of tables) {
+  const { file, icon, color } = table
+
+  if (!iconProcessed.has(icon)) {
+    const oldSVGPath = `build/seti-ui/icons/${icon}.svg`
+    let svgText = fs.readFileSync(oldSVGPath, 'utf-8')
+
+    if (!ignoreReplace.includes(icon)) {
+      svgText = svgText.replace(/color="[^"]*"/g, 'color="currentColor"')
+      svgText = svgText.replace(/fill="[^"]*"/g, 'color="currentColor"')
+      svgText = svgText.replace(/\.st0{fill:(\S*);?}/, `.st0{fill:${color}}`)
+      svgText = svgText.replace(/\.st1{fill:(\S*);?}/, `.st1{fill:${color}}`)//stupid
+    }
+
+    if (icon == 'wgt') {
+      svgText = svgText.replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" `)
+    }
+
+    const _svg = svgText.replace('xmlns="http://www.w3.org/2000/svg"', `xmlns="http://www.w3.org/2000/svg" style="fill: ${color}"`)
+    console.log("start process icon: ", icon)
+
+    // FIXME: heroku.svg autocrop failed
+    // svg autocrop failed: SVG image has dimension more than 4000x4000, we do not support SVG images of this size or larger
+    const realSvg = (await svgCrop(_svg)) || _svg
+    fs.writeFileSync('icons/' + icon + '.svg', realSvg)
+    iconProcessed.add(icon)
   }
 
-  const _svg = svgText.replace('xmlns="http://www.w3.org/2000/svg"', `xmlns="http://www.w3.org/2000/svg" style="fill: ${color}"`)
-  fs.writeFileSync('icons/' + icon + '.svg', _svg)
   if (file.startsWith(".")) {
     theme.themes[0].file_suffixes[file.substring(1)] = icon
   } else {
     theme.themes[0].file_stems[file] = icon
   }
   theme.themes[0].file_icons[icon] = { "path": `./icons/${icon}.svg` }
-})
+}
 
 fs.writeFileSync("icon_themes/seti.json", JSON.stringify(theme, null, 2))

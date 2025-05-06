@@ -2,8 +2,4 @@
 
 https://github.com/jesseweed/seti-ui
 
-![image.png](https://s2.loli.net/2025/05/06/4Z7NIileYCOrtmB.png)
-
-## TODO
-
-- [ ] 解决图标太糊问题
+![image.png](https://s2.loli.net/2025/05/06/BaP7M3qswVt8y4v.png)

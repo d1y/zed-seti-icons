@@ -1,5 +1,6 @@
 {
   "devDependencies": {
-    "@types/bun": "^1.2.12"
+    "@types/bun": "^1.2.12",
+    "request-promise": "^4.2.6"
   }
 }
