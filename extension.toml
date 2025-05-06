@@ -1,0 +1,7 @@
+id = "seti-icons"
+name = "Seti Icons Theme"
+version = "0.0.1"
+schema_version = 1
+authors = ["d1y <chenhonzhou@gmail.com>"]
+description = "Seti Icons Theme for zed"
+repository = "https://github.com/d1y/zed-seti-icons"
