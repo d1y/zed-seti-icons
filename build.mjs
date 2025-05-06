@@ -56,11 +56,28 @@ if (!fs.existsSync("build/seti-ui")) {
 
 fs.mkdirSync("icons", { recursive: true })
 const tables = await getIcons()
+
+const ignoreReplace = [
+  'twig',
+  'elm',
+]
 tables.forEach(table=> {
   const { file, icon, color } = table
   const oldSVGPath = `build/seti-ui/icons/${icon}.svg`
-  const svgText = fs.readFileSync(oldSVGPath, 'utf-8')
-  const _svg = svgText.replace('<svg xmlns="http://www.w3.org/2000/svg"', `<svg xmlns="http://www.w3.org/2000/svg" style="fill: ${color}"`)
+  let svgText = fs.readFileSync(oldSVGPath, 'utf-8')
+  
+  if (!ignoreReplace.includes(icon)) {
+    svgText = svgText.replace(/color="[^"]*"/g, 'color="currentColor"')
+    svgText = svgText.replace(/fill="[^"]*"/g, 'color="currentColor"')
+    svgText = svgText.replace(/\.st0{fill:(\S*);?}/, `.st0{fill:${color}}`)
+    svgText = svgText.replace(/\.st1{fill:(\S*);?}/, `.st1{fill:${color}}`)//stupid
+  }
+  
+  if (icon == 'wgt') {
+    svgText = svgText.replace('<svg ', `<svg xmlns="http://www.w3.org/2000/svg" `)
+  }
+
+  const _svg = svgText.replace('xmlns="http://www.w3.org/2000/svg"', `xmlns="http://www.w3.org/2000/svg" style="fill: ${color}"`)
   fs.writeFileSync('icons/' + icon + '.svg', _svg)
   if (file.startsWith(".")) {
     theme.themes[0].file_suffixes[file.substring(1)] = icon
