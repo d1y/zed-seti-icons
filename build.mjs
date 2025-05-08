@@ -122,4 +122,8 @@ for (const table of tables) {
   theme.themes[0].file_icons[icon] = { "path": `./icons/${icon}.svg` }
 }
 
+// https://github.com/d1y/zed-seti-icons/issues/1
+theme.themes[0].file_suffixes['shtml'] = 'html'
+theme.themes[0].file_suffixes['zst '] = 'zip'
+
 fs.writeFileSync("icon_themes/seti.json", JSON.stringify(theme, null, 2))
